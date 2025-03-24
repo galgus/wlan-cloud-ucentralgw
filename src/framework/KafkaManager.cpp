@@ -72,6 +72,8 @@ namespace OpenWifi {
 	}
 
 	inline void KafkaProducer::run() {
+		const int num_partitions = MicroServiceConfigGetInt("openwifi.kafka.partitions", 1);
+		uint32_t round_robin = 0;
 		Poco::Logger &Logger_ =
 			Poco::Logger::create("KAFKA-PRODUCER", KafkaManager()->Logger().getChannel());
 		poco_information(Logger_, "Starting...");
@@ -104,7 +106,7 @@ namespace OpenWifi {
 				if (Msg != nullptr) {
 					auto NewMessage = cppkafka::MessageBuilder(Msg->Topic());
 					NewMessage.key(Msg->Key());
-					NewMessage.partition(0);
+					NewMessage.partition(round_robin++ % num_partitions);
 					NewMessage.payload(Msg->Payload());
 					Producer.produce(NewMessage);
 					if (Queue_.size() < 100) {
