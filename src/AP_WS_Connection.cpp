@@ -561,14 +561,14 @@ namespace OpenWifi {
 	void AP_WS_Connection::OnSocketShutdown(
 		[[maybe_unused]] const Poco::AutoPtr<Poco::Net::ShutdownNotification> &pNf) {
 		poco_trace(Logger_, fmt::format("SOCKET-SHUTDOWN({}): Closing.", CId_));
-//		std::lock_guard	G(ConnectionMutex_);
+		std::lock_guard	G(ConnectionMutex_);
 		return EndConnection();
 	}
 
 	void AP_WS_Connection::OnSocketError(
 		[[maybe_unused]] const Poco::AutoPtr<Poco::Net::ErrorNotification> &pNf) {
 		poco_trace(Logger_, fmt::format("SOCKET-ERROR({}): Closing.", CId_));
-//		std::lock_guard	G(ConnectionMutex_);
+		std::lock_guard	G(ConnectionMutex_);
 		return EndConnection();
 	}
 
