@@ -77,8 +77,8 @@ namespace OpenWifi {
 
 	AP_WS_Connection::~AP_WS_Connection() {
 		std::lock_guard G(ConnectionMutex_);
-		AP_WS_Server()->DecrementConnectionCount();
 		EndConnection();
+		AP_WS_Server()->DecrementConnectionCount();
 		poco_debug(Logger_, fmt::format("TERMINATION({}): Session={}, Connection removed.", SerialNumber_,
 										State_.sessionId));
 	}
@@ -128,7 +128,7 @@ namespace OpenWifi {
 
 	bool AP_WS_Connection::ValidatedDevice() {
 
-		if(Dead_)
+		if(Dead_.load())
 			return false;
 
 		if (DeviceValidated_)
@@ -272,7 +272,10 @@ namespace OpenWifi {
 							"Device will have to retry. Unsecure connect denied.",
 							CId_, State_.sessionId));
 		}
-		EndConnection();
+		std::unique_lock G(ConnectionMutex_, std::try_to_lock);
+		if (G.owns_lock()) {
+			EndConnection();
+		}
 		return false;
 	}
 
@@ -561,24 +564,30 @@ namespace OpenWifi {
 	void AP_WS_Connection::OnSocketShutdown(
 		[[maybe_unused]] const Poco::AutoPtr<Poco::Net::ShutdownNotification> &pNf) {
 		poco_trace(Logger_, fmt::format("SOCKET-SHUTDOWN({}): Closing.", CId_));
-		std::lock_guard	G(ConnectionMutex_);
-		return EndConnection();
+		if (Dead_.load())
+			return;
+		std::unique_lock G(ConnectionMutex_, std::try_to_lock);
+		if (G.owns_lock()) {
+			EndConnection();
+		}
 	}
 
 	void AP_WS_Connection::OnSocketError(
 		[[maybe_unused]] const Poco::AutoPtr<Poco::Net::ErrorNotification> &pNf) {
 		poco_trace(Logger_, fmt::format("SOCKET-ERROR({}): Closing.", CId_));
-		std::lock_guard	G(ConnectionMutex_);
-		return EndConnection();
+		if (Dead_.load())
+			return;
+		std::unique_lock G(ConnectionMutex_, std::try_to_lock);
+		if (G.owns_lock()) {
+			EndConnection();
+		}
 	}
 
 	void AP_WS_Connection::OnSocketReadable(
 		[[maybe_unused]] const Poco::AutoPtr<Poco::Net::ReadableNotification> &pNf) {
 
-		if (Dead_) //	we are dead, so we do not process anything.
+		if (Dead_.load()) //	we are dead, so we do not process anything.
 			return;
-
-		std::lock_guard	G(ConnectionMutex_);
 
 		State_.LastContact = LastContact_ = Utils::Now();
 		if (AP_WS_Server()->Running() && (DeviceValidated_ || ValidatedDevice())) {
@@ -596,7 +605,10 @@ namespace OpenWifi {
 					Logger_, fmt::format("Unknown exception for {}. Connection terminated.", CId_));
 			}
 		}
-		EndConnection();
+		std::unique_lock G(ConnectionMutex_, std::try_to_lock);
+		if (G.owns_lock()) {
+			EndConnection();
+		}
 	}
 
 	void AP_WS_Connection::ProcessIncomingFrame() {
@@ -613,7 +625,11 @@ namespace OpenWifi {
 				poco_information(Logger_,
 								 fmt::format("DISCONNECT({}): device has disconnected. Session={}",
 											 CId_, State_.sessionId));
-				return EndConnection();
+				std::unique_lock G(ConnectionMutex_, std::try_to_lock);
+				if (G.owns_lock()) {
+					EndConnection();
+				}
+				return;
 			}
 
 			IncomingFrame.append(0);
@@ -776,7 +792,10 @@ namespace OpenWifi {
 			return;
 
 		poco_warning(Logger_, fmt::format("DISCONNECTING({}): ConnectionException: {} Errors: {}", CId_, KillConnection, Errors_ ));
-		EndConnection();
+		std::unique_lock G(ConnectionMutex_, std::try_to_lock);
+		if (G.owns_lock()) {
+			EndConnection();
+		}
 	}
 
 	bool AP_WS_Connection::Send(const std::string &Payload) {
