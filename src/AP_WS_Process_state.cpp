@@ -49,10 +49,6 @@ namespace OpenWifi {
 
 			SetLastStats(StateStr);
 
-			GWObjects::Statistics Stats{
-				.SerialNumber = SerialNumber_, .UUID = UUID, .Data = StateStr};
-			Stats.Recorded = Utils::Now();
-			StorageService()->AddStatisticsData(DbSession_->Session(),Stats);
 			if (!request_uuid.empty()) {
 				StorageService()->SetCommandResult(request_uuid, StateStr);
 			}
