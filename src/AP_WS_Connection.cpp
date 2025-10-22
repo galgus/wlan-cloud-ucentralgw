@@ -646,20 +646,6 @@ namespace OpenWifi {
 								   (int)Poco::Net::WebSocket::FRAME_OP_PONG |
 									   (int)Poco::Net::WebSocket::FRAME_FLAG_FIN);
 
-					if (KafkaManager()->Enabled()) {
-						Poco::JSON::Object PingObject;
-						Poco::JSON::Object PingDetails;
-						PingDetails.set(uCentralProtocol::FIRMWARE, State_.Firmware);
-						PingDetails.set(uCentralProtocol::SERIALNUMBER, SerialNumber_);
-						PingDetails.set(uCentralProtocol::COMPATIBLE, Compatible_);
-						PingDetails.set(uCentralProtocol::CONNECTIONIP, CId_);
-						PingDetails.set(uCentralProtocol::TIMESTAMP, Utils::Now());
-						PingDetails.set(uCentralProtocol::UUID, uuid_);
-						PingDetails.set("locale", State_.locale);
-						PingObject.set(uCentralProtocol::PING, PingDetails);
-						poco_trace(Logger_,fmt::format("Sending PING for {}", SerialNumber_));
-						KafkaManager()->PostMessage(KafkaTopics::CONNECTION, SerialNumber_,PingObject);
-					}
 				} break;
 
 				case Poco::Net::WebSocket::FRAME_OP_PONG: {
