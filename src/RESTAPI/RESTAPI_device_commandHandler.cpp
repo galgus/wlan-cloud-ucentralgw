@@ -91,7 +91,7 @@ namespace OpenWifi {
 					TransactionId_, UUID, RPC, Poco::Thread::current()->id()));
 			return Rtty(UUID, RPC, 60000ms, Restrictions);
 		};
-		case APCommands::Commands::package:{
+		case APCommands::Commands::package: {
 			GWObjects::DeviceRestrictions Restrictions;
 			std::string pkg_name = "";
 			if (!AP_WS_Server()->Connected(SerialNumberInt_, Restrictions)) {
@@ -204,14 +204,22 @@ namespace OpenWifi {
 		 30000ms},
 		{APCommands::Commands::ping, false, true, &RESTAPI_device_commandHandler::Ping, 60000ms},
 		{APCommands::Commands::rrm, false, true, &RESTAPI_device_commandHandler::RRM, 60000ms},
-		{APCommands::Commands::certupdate, false, true, &RESTAPI_device_commandHandler::CertUpdate, 60000ms},
-		{APCommands::Commands::transfer, false, true, &RESTAPI_device_commandHandler::Transfer, 60000ms},
-		{APCommands::Commands::script, false, true, &RESTAPI_device_commandHandler::Script, 60000ms},
-		{APCommands::Commands::powercycle, false, true, &RESTAPI_device_commandHandler::PowerCycle, 60000ms},
-		{APCommands::Commands::fixedconfig, false, true, &RESTAPI_device_commandHandler::FixedConfig, 120000ms},
-		{APCommands::Commands::cablediagnostics, false, true, &RESTAPI_device_commandHandler::CableDiagnostics, 120000ms},
-		{APCommands::Commands::reenroll, false, true, &RESTAPI_device_commandHandler::ReEnroll, 120000ms},
-		{APCommands::Commands::package, false, true, &RESTAPI_device_commandHandler::PackageInstall, 120000ms},
+		{APCommands::Commands::certupdate, false, true, &RESTAPI_device_commandHandler::CertUpdate,
+		 60000ms},
+		{APCommands::Commands::transfer, false, true, &RESTAPI_device_commandHandler::Transfer,
+		 60000ms},
+		{APCommands::Commands::script, false, true, &RESTAPI_device_commandHandler::Script,
+		 60000ms},
+		{APCommands::Commands::powercycle, false, true, &RESTAPI_device_commandHandler::PowerCycle,
+		 60000ms},
+		{APCommands::Commands::fixedconfig, false, true,
+		 &RESTAPI_device_commandHandler::FixedConfig, 120000ms},
+		{APCommands::Commands::cablediagnostics, false, true,
+		 &RESTAPI_device_commandHandler::CableDiagnostics, 120000ms},
+		{APCommands::Commands::reenroll, false, true, &RESTAPI_device_commandHandler::ReEnroll,
+		 120000ms},
+		{APCommands::Commands::package, false, true, &RESTAPI_device_commandHandler::PackageInstall,
+		 120000ms},
 	};
 
 	void RESTAPI_device_commandHandler::DoPost() {
@@ -449,13 +457,14 @@ namespace OpenWifi {
 		BadRequest(RESTAPI::Errors::NoRecordsDeleted);
 	}
 
-	void RESTAPI_device_commandHandler::GetPackages(const std::string &CMD_UUID, uint64_t CMD_RPC,
+	void RESTAPI_device_commandHandler::GetPackages(
+		const std::string &CMD_UUID, uint64_t CMD_RPC,
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions,
 		const std::string pkg_name) {
 		poco_debug(Logger_, fmt::format("GET-PACKAGES({},{}): TID={} user={} serial={}. thr_id={}",
-										TransactionId_, Requester(), SerialNumber_,
-										Poco::Thread::current()->id()));
+										CMD_UUID, CMD_RPC, TransactionId_, Requester(),
+										SerialNumber_, Poco::Thread::current()->id()));
 
 		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
@@ -478,7 +487,7 @@ namespace OpenWifi {
 		Cmd.Details = ParamStream.str();
 
 		RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::package, false, Cmd, Params,
-										*Request, *Response, timeout, nullptr, nullptr, Logger_);
+									*Request, *Response, timeout, nullptr, nullptr, Logger_);
 
 		Poco::JSON::Object O, P;
 		Cmd.to_json(O);
@@ -493,18 +502,20 @@ namespace OpenWifi {
 		const std::string &CMD_UUID, uint64_t CMD_RPC,
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
-	
+
 		if (UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
 			UserInfo_.userinfo.userRole != SecurityObjects::ADMIN) {
 			CallCanceled("INSTALLPACKAGE", CMD_UUID, CMD_RPC, RESTAPI::Errors::ACCESS_DENIED);
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
 		}
 
-		poco_debug(Logger_, fmt::format("INSTALL-PACKAGES({},{}): TID={} user={} serial={}", CMD_UUID,
-										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
+		poco_debug(Logger_,
+				   fmt::format("INSTALL-PACKAGES({},{}): TID={} user={} serial={}", CMD_UUID,
+							   CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
 		if (IsDeviceSimulated(SerialNumber_)) {
-			CallCanceled("INSTALL-PACKAGES", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
+			CallCanceled("INSTALL-PACKAGES", CMD_UUID, CMD_RPC,
+						 RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -515,16 +526,18 @@ namespace OpenWifi {
 
 		auto SNum = Obj->get(RESTAPI::Protocol::SERIALNUMBER).toString();
 		if (SerialNumber_ != SNum) {
-			CallCanceled("INSTALL-PACKAGES", CMD_UUID, CMD_RPC, RESTAPI::Errors::SerialNumberMismatch);
+			CallCanceled("INSTALL-PACKAGES", CMD_UUID, CMD_RPC,
+						 RESTAPI::Errors::SerialNumberMismatch);
 			return BadRequest(RESTAPI::Errors::SerialNumberMismatch);
 		}
 
 		std::ostringstream os;
 		ParsedBody_->stringify(os);
 
-		poco_information(Logger_, fmt::format("INSTALL_OBJECT: {} for device {}", os.str(), SerialNumber_));
+		poco_information(Logger_,
+						 fmt::format("INSTALL_OBJECT: {} for device {}", os.str(), SerialNumber_));
 
-		GWObjects::PackageInstall	PI;
+		GWObjects::PackageInstall PI;
 		if (!PI.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
@@ -545,8 +558,8 @@ namespace OpenWifi {
 		std::ostringstream os2;
 		Params.stringify(os2);
 
-		poco_information(Logger_, fmt::format("INSTALL_OBJECT2: {} for device {}", os2.str(), SerialNumber_));
-
+		poco_information(
+			Logger_, fmt::format("INSTALL_OBJECT2: {} for device {}", os2.str(), SerialNumber_));
 
 		std::stringstream ParamStream;
 		Params.stringify(ParamStream);
@@ -560,7 +573,7 @@ namespace OpenWifi {
 		Cmd.Details = ParamStream.str();
 
 		RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::package, false, Cmd, Params,
-										*Request, *Response, timeout, nullptr, nullptr, Logger_);
+									*Request, *Response, timeout, nullptr, nullptr, Logger_);
 
 		Poco::JSON::Object O, P;
 		Cmd.to_json(O);
@@ -582,11 +595,13 @@ namespace OpenWifi {
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
 		}
 
-		poco_debug(Logger_, fmt::format("DELETE-PACKAGES({},{}): TID={} user={} serial={}", CMD_UUID,
-										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
+		poco_debug(Logger_,
+				   fmt::format("DELETE-PACKAGES({},{}): TID={} user={} serial={}", CMD_UUID,
+							   CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
 		if (IsDeviceSimulated(SerialNumber_)) {
-			CallCanceled("DELETE-PACKAGES", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
+			CallCanceled("DELETE-PACKAGES", CMD_UUID, CMD_RPC,
+						 RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -597,16 +612,18 @@ namespace OpenWifi {
 
 		auto SNum = Obj->get(RESTAPI::Protocol::SERIALNUMBER).toString();
 		if (SerialNumber_ != SNum) {
-			CallCanceled("DELETE-PACKAGES", CMD_UUID, CMD_RPC, RESTAPI::Errors::SerialNumberMismatch);
+			CallCanceled("DELETE-PACKAGES", CMD_UUID, CMD_RPC,
+						 RESTAPI::Errors::SerialNumberMismatch);
 			return BadRequest(RESTAPI::Errors::SerialNumberMismatch);
 		}
 
 		std::ostringstream os;
 		ParsedBody_->stringify(os);
 
-		poco_information(Logger_, fmt::format("DELETE_OBJECT: {} for device {}", os.str(), SerialNumber_));
+		poco_information(Logger_,
+						 fmt::format("DELETE_OBJECT: {} for device {}", os.str(), SerialNumber_));
 
-		GWObjects::PackageRemove	PR;
+		GWObjects::PackageRemove PR;
 		if (!PR.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
@@ -627,8 +644,8 @@ namespace OpenWifi {
 		std::ostringstream os2;
 		Params.stringify(os2);
 
-		poco_information(Logger_, fmt::format("DELETE_OBJECT2: {} for device {}", os2.str(), SerialNumber_));
-
+		poco_information(Logger_,
+						 fmt::format("DELETE_OBJECT2: {} for device {}", os2.str(), SerialNumber_));
 
 		std::stringstream ParamStream;
 		Params.stringify(ParamStream);
@@ -642,7 +659,7 @@ namespace OpenWifi {
 		Cmd.Details = ParamStream.str();
 
 		RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::package, false, Cmd, Params,
-										*Request, *Response, timeout, nullptr, nullptr, Logger_);
+									*Request, *Response, timeout, nullptr, nullptr, Logger_);
 
 		Poco::JSON::Object O, P;
 		Cmd.to_json(O);
@@ -713,8 +730,8 @@ namespace OpenWifi {
 	}
 
 	bool RESTAPI_device_commandHandler::IsDeviceSimulated(std::string &Serial) {
-		GWObjects::Device	Device;
-		if(StorageService()->GetDevice(Serial,Device)) {
+		GWObjects::Device Device;
+		if (StorageService()->GetDevice(Serial, Device)) {
 			return Device.simulated;
 		}
 		return false;
@@ -735,7 +752,7 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("SCRIPT({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -785,13 +802,13 @@ namespace OpenWifi {
 		std::string EncodedScript;
 		if (!SCR.scriptId.empty()) {
 			GWObjects::ScriptEntry Existing;
-			if(Utils::ValidUUID(SCR.scriptId)) {
+			if (Utils::ValidUUID(SCR.scriptId)) {
 				if (!StorageService()->ScriptDB().GetRecord("id", SCR.scriptId, Existing)) {
 					CallCanceled("SCRIPT", CMD_UUID, CMD_RPC,
 								 RESTAPI::Errors::MissingOrInvalidParameters);
 					return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 				}
-			} else if(!StorageService()->ScriptDB().GetRecord("name", SCR.scriptId, Existing)) {
+			} else if (!StorageService()->ScriptDB().GetRecord("name", SCR.scriptId, Existing)) {
 				CallCanceled("SCRIPT", CMD_UUID, CMD_RPC,
 							 RESTAPI::Errors::MissingOrInvalidParameters);
 				return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
@@ -828,7 +845,7 @@ namespace OpenWifi {
 							 RESTAPI::Errors::MissingOrInvalidParameters);
 				return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 			}
-			if(!DiagnosticScript) {
+			if (!DiagnosticScript) {
 				EncodedScript = SCR.script;
 			}
 		}
@@ -879,7 +896,7 @@ namespace OpenWifi {
 		std::stringstream ParamStream;
 		Params.stringify(ParamStream);
 		Cmd.Details = ParamStream.str();
-		FileUploader()->AddUUID(CMD_UUID, 15min, SCR.type == "shell" ? "txt" : "tgz" );
+		FileUploader()->AddUUID(CMD_UUID, 15min, SCR.type == "shell" ? "txt" : "tgz");
 
 		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::script, false, Cmd,
 										   Params, *Request, *Response, timeout, nullptr, this,
@@ -909,17 +926,17 @@ namespace OpenWifi {
 			auto Configuration =
 				GetS(RESTAPI::Protocol::CONFIGURATION, Obj, uCentralProtocol::EMPTY_JSON_DOC);
 			std::string Error;
-			if (!ValidateUCentralConfiguration(ConfigurationValidator::GetType(DeviceInfo.DeviceType),
-											   Configuration, Error,
-											   GetBoolParameter("strict", false))) {
+			if (!ValidateUCentralConfiguration(
+					ConfigurationValidator::GetType(DeviceInfo.DeviceType), Configuration, Error,
+					GetBoolParameter("strict", false))) {
 				CallCanceled("CONFIGURE", CMD_UUID, CMD_RPC, RESTAPI::Errors::ConfigBlockInvalid);
 				return BadRequest(RESTAPI::Errors::ConfigBlockInvalid, Error);
 			}
 
 			auto When = GetWhen(Obj);
-			uint64_t NewUUID=0;
+			uint64_t NewUUID = 0;
 			if (StorageService()->SetPendingDeviceConfiguration(SerialNumber_, Configuration,
-															NewUUID)) {
+																NewUUID)) {
 				GWObjects::CommandDetails Cmd;
 
 				Cmd.SerialNumber = SerialNumber_;
@@ -951,26 +968,28 @@ namespace OpenWifi {
 						Poco::JSON::Object CompressedParams;
 						std::string CompressedBase64Data;
 						std::uint64_t UncompressedDataLen = ParamStream.str().length();
-						if (Utils::CompressAndEncodeBase64(ParamStream.str(), CompressedBase64Data)) {
+						if (Utils::CompressAndEncodeBase64(ParamStream.str(),
+														   CompressedBase64Data)) {
 							// set compressed, base 64 encoded data and length of uncompressed data
-							CompressedParams.set(uCentralProtocol::COMPRESS_64, CompressedBase64Data);
-							CompressedParams.set(uCentralProtocol::COMPRESS_SZ, UncompressedDataLen);
+							CompressedParams.set(uCentralProtocol::COMPRESS_64,
+												 CompressedBase64Data);
+							CompressedParams.set(uCentralProtocol::COMPRESS_SZ,
+												 UncompressedDataLen);
 							ConfigParams = CompressedParams;
 						}
 					}
 				}
 
-
 				// AP_WS_Server()->SetPendingUUID(SerialNumber_, NewUUID);
-				RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::configure, true,
-												   Cmd, ConfigParams, *Request, *Response, timeout,
-												   nullptr, this, Logger_);
+				RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::configure, true, Cmd,
+											ConfigParams, *Request, *Response, timeout, nullptr,
+											this, Logger_);
 
-				if(!Cmd.Executed) {
+				if (!Cmd.Executed) {
 					return;
 				}
 
-				if(Cmd.ErrorCode==2) {
+				if (Cmd.ErrorCode == 2) {
 					StorageService()->RollbackDeviceConfigurationChange(SerialNumber_);
 				} else {
 					StorageService()->CompleteDeviceConfigurationChange(SerialNumber_);
@@ -1029,7 +1048,8 @@ namespace OpenWifi {
 				FWSignature = SignatureManager()->Sign(DeviceInfo.restrictionDetails, uri);
 			}
 
-			if (!Restrictions.developer && FWSignature.empty() && DeviceInfo.restrictionDetails.upgrade) {
+			if (!Restrictions.developer && FWSignature.empty() &&
+				DeviceInfo.restrictionDetails.upgrade) {
 				return BadRequest(RESTAPI::Errors::DeviceRequiresSignature);
 			}
 
@@ -1191,7 +1211,7 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("TRACE({},{}): TID={} user={} serial={}", CMD_UUID, CMD_RPC,
 										TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -1253,8 +1273,7 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("WIFISCAN({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -1313,7 +1332,7 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("EVENT-QUEUE({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -1361,7 +1380,7 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("FORCE-REQUEST({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -1411,7 +1430,7 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("RTTY({},{}): TID={} user={} serial={}", CMD_UUID, CMD_RPC,
 										TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -1424,7 +1443,7 @@ namespace OpenWifi {
 
 			if (StorageService()->GetDevice(SerialNumber_, Device)) {
 
-				if(Device.simulated) {
+				if (Device.simulated) {
 					return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 				}
 
@@ -1446,7 +1465,7 @@ namespace OpenWifi {
 				if (RTTYS_server()->UseInternal()) {
 					std::uint64_t SN = Utils::SerialNumberToInt(SerialNumber_);
 					bool mTLS = AP_WS_Server()->DeviceRequiresSecureRTTY(SN);
-					auto Hash =  Utils::ComputeHash(UserInfo_.webtoken.refresh_token_, Utils::Now());
+					auto Hash = Utils::ComputeHash(UserInfo_.webtoken.refresh_token_, Utils::Now());
 					Rtty.Token = Hash.substr(0, RTTY_DEVICE_TOKEN_LENGTH);
 					if (!RTTYS_server()->CreateEndPoint(Rtty.ConnectionId, Rtty.Token, Requester(),
 														SerialNumber_, mTLS)) {
@@ -1501,7 +1520,7 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("TELEMETRY({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
@@ -1624,38 +1643,35 @@ namespace OpenWifi {
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
 
-		poco_debug(Logger_, fmt::format("RRM({},{}): TID={} user={} serial={}", CMD_UUID,
-										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
+		poco_debug(Logger_, fmt::format("RRM({},{}): TID={} user={} serial={}", CMD_UUID, CMD_RPC,
+										TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
-		if(UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
+		if (UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
 			UserInfo_.userinfo.userRole != SecurityObjects::ADMIN) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::ACCESS_DENIED);
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
 		}
 
-		if(!ParsedBody_->has("actions") || !ParsedBody_->isArray("actions")) {
+		if (!ParsedBody_->has("actions") || !ParsedBody_->isArray("actions")) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
 		const auto &Actions = *ParsedBody_->getArray("actions");
 		//	perform some validation on the commands.
-		for(const auto &action:Actions) {
+		for (const auto &action : Actions) {
 			auto ActionDetails = action.extract<Poco::JSON::Object::Ptr>();
-			if(!ActionDetails->has("action")) {
+			if (!ActionDetails->has("action")) {
 				return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 			}
 			auto ActionStr = ActionDetails->get("action").toString();
-			if(	ActionStr != "kick"
-				&& ActionStr != "channel_switch"
-				&& ActionStr != "tx_power"
-				&& ActionStr != "beacon_request"
-				&& ActionStr != "bss_transition"
-				&& ActionStr != "neighbors" ) {
+			if (ActionStr != "kick" && ActionStr != "channel_switch" && ActionStr != "tx_power" &&
+				ActionStr != "beacon_request" && ActionStr != "bss_transition" &&
+				ActionStr != "neighbors") {
 				return BadRequest(RESTAPI::Errors::InvalidRRMAction);
 			}
 		}
@@ -1675,14 +1691,14 @@ namespace OpenWifi {
 		Cmd.RunAt = 0;
 		Cmd.ErrorCode = 0;
 		Cmd.WaitingForFile = 0;
-		Cmd.Status= "completed";
-		if(CommandManager()->FireAndForget(SerialNumber_, uCentralProtocol::RRM, Params)) {
-			Cmd.Status= "completed";
+		Cmd.Status = "completed";
+		if (CommandManager()->FireAndForget(SerialNumber_, uCentralProtocol::RRM, Params)) {
+			Cmd.Status = "completed";
 			StorageService()->AddCommand(SerialNumber_, Cmd,
 										 Storage::CommandExecutionType::COMMAND_COMPLETED);
 			return OK();
 		}
-		Cmd.Status= "failed";	//	should never happen
+		Cmd.Status = "failed"; //	should never happen
 		StorageService()->AddCommand(SerialNumber_, Cmd,
 									 Storage::CommandExecutionType::COMMAND_COMPLETED);
 		return BadRequest(RESTAPI::Errors::CouldNotPerformCommand);
@@ -1693,7 +1709,7 @@ namespace OpenWifi {
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
 
-		if(UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
+		if (UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
 			UserInfo_.userinfo.userRole != SecurityObjects::ADMIN) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::ACCESS_DENIED);
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
@@ -1702,13 +1718,13 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("TRANSFER({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
-		GWObjects::DeviceTransferRequest	TR;
-		if(!TR.from_json(ParsedBody_)) {
+		GWObjects::DeviceTransferRequest TR;
+		if (!TR.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
@@ -1725,8 +1741,8 @@ namespace OpenWifi {
 		Cmd.WaitingForFile = 0;
 
 		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::transfer, false, Cmd,
-										   *ParsedBody_, *Request, *Response, timeout, nullptr, this,
-										   Logger_);
+										   *ParsedBody_, *Request, *Response, timeout, nullptr,
+										   this, Logger_);
 	}
 
 	void RESTAPI_device_commandHandler::CertUpdate(
@@ -1737,24 +1753,24 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("CERTUPDATE({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
+		if (UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
 			UserInfo_.userinfo.userRole != SecurityObjects::ADMIN) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::ACCESS_DENIED);
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
 		}
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
-		GWObjects::DeviceCertificateUpdateRequest	CR;
-		if(!CR.from_json(ParsedBody_)) {
+		GWObjects::DeviceCertificateUpdateRequest CR;
+		if (!CR.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
-		GWObjects::DeviceTransferRequest	TR;
-		if(!TR.from_json(ParsedBody_)) {
+		GWObjects::DeviceTransferRequest TR;
+		if (!TR.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
@@ -1771,10 +1787,8 @@ namespace OpenWifi {
 		Cmd.WaitingForFile = 0;
 
 		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::certupdate, false, Cmd,
-										   *ParsedBody_, *Request, *Response, timeout, nullptr, this,
-										   Logger_);
-
-
+										   *ParsedBody_, *Request, *Response, timeout, nullptr,
+										   this, Logger_);
 	}
 
 	void RESTAPI_device_commandHandler::PowerCycle(
@@ -1782,7 +1796,7 @@ namespace OpenWifi {
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
 
-		if(UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
+		if (UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
 			UserInfo_.userinfo.userRole != SecurityObjects::ADMIN) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::ACCESS_DENIED);
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
@@ -1791,13 +1805,13 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("POWERCYCLE({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
+		if (IsDeviceSimulated(SerialNumber_)) {
 			CallCanceled("RRM", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
-		GWObjects::PowerCycleRequest	PR;
-		if(!PR.from_json(ParsedBody_)) {
+		GWObjects::PowerCycleRequest PR;
+		if (!PR.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
@@ -1814,8 +1828,8 @@ namespace OpenWifi {
 		Cmd.WaitingForFile = 0;
 
 		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::powercycle, false, Cmd,
-										   *ParsedBody_, *Request, *Response, timeout, nullptr, this,
-										   Logger_);
+										   *ParsedBody_, *Request, *Response, timeout, nullptr,
+										   this, Logger_);
 	}
 
 	// `fixedconfig` command is used set country propery on AP
@@ -1823,17 +1837,18 @@ namespace OpenWifi {
 	void RESTAPI_device_commandHandler::FixedConfig(
 		const std::string &CMD_UUID, uint64_t CMD_RPC, std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
-		poco_debug(Logger_, fmt::format("FIXEDCONFIG({},{}): TID={} user={} serial={}", CMD_UUID, CMD_RPC,
-										TransactionId_, Requester(), SerialNumber_));
+		poco_debug(Logger_, fmt::format("FIXEDCONFIG({},{}): TID={} user={} serial={}", CMD_UUID,
+										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 		// do not allow `fixedconfig` command for simulated devices
-		if(IsDeviceSimulated(SerialNumber_)) {
-			CallCanceled("FIXEDCONFIG", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
+		if (IsDeviceSimulated(SerialNumber_)) {
+			CallCanceled("FIXEDCONFIG", CMD_UUID, CMD_RPC,
+						 RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
 		// setup and validate fixedconfig object
 		GWObjects::FixedConfig fixed_config;
-		if(!fixed_config.from_json(ParsedBody_)) {
+		if (!fixed_config.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
@@ -1852,8 +1867,8 @@ namespace OpenWifi {
 
 		// send fixedconfig command to device and return status
 		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::fixedconfig, false, Cmd,
-										   *ParsedBody_, *Request, *Response, timeout, nullptr, this,
-										   Logger_);
+										   *ParsedBody_, *Request, *Response, timeout, nullptr,
+										   this, Logger_);
 	}
 
 	void RESTAPI_device_commandHandler::CableDiagnostics(
@@ -1861,22 +1876,24 @@ namespace OpenWifi {
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
 
-		if(UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
+		if (UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
 			UserInfo_.userinfo.userRole != SecurityObjects::ADMIN) {
 			CallCanceled("CABLEDIAGNOSTICS", CMD_UUID, CMD_RPC, RESTAPI::Errors::ACCESS_DENIED);
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
 		}
 
-		poco_debug(Logger_, fmt::format("CABLEDIAGNOSTICS({},{}): TID={} user={} serial={}", CMD_UUID,
-										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
+		poco_debug(Logger_,
+				   fmt::format("CABLEDIAGNOSTICS({},{}): TID={} user={} serial={}", CMD_UUID,
+							   CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
-			CallCanceled("CABLEDIAGNOSTICS", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
+		if (IsDeviceSimulated(SerialNumber_)) {
+			CallCanceled("CABLEDIAGNOSTICS", CMD_UUID, CMD_RPC,
+						 RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
-		GWObjects::CableDiagnostics	PR;
-		if(!PR.from_json(ParsedBody_)) {
+		GWObjects::CableDiagnostics PR;
+		if (!PR.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
@@ -1892,9 +1909,9 @@ namespace OpenWifi {
 		Cmd.ErrorCode = 0;
 		Cmd.WaitingForFile = 0;
 
-		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::cablediagnostics, false, Cmd,
-										   *ParsedBody_, *Request, *Response, timeout, nullptr, this,
-										   Logger_);
+		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::cablediagnostics, false,
+										   Cmd, *ParsedBody_, *Request, *Response, timeout, nullptr,
+										   this, Logger_);
 	}
 
 	void RESTAPI_device_commandHandler::ReEnroll(
@@ -1902,7 +1919,7 @@ namespace OpenWifi {
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
 
-		if(UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
+		if (UserInfo_.userinfo.userRole != SecurityObjects::ROOT &&
 			UserInfo_.userinfo.userRole != SecurityObjects::ADMIN) {
 			CallCanceled("REENROLL", CMD_UUID, CMD_RPC, RESTAPI::Errors::ACCESS_DENIED);
 			return UnAuthorized(RESTAPI::Errors::ACCESS_DENIED);
@@ -1911,13 +1928,14 @@ namespace OpenWifi {
 		poco_debug(Logger_, fmt::format("REENROLL({},{}): TID={} user={} serial={}", CMD_UUID,
 										CMD_RPC, TransactionId_, Requester(), SerialNumber_));
 
-		if(IsDeviceSimulated(SerialNumber_)) {
-			CallCanceled("REENROLL", CMD_UUID, CMD_RPC, RESTAPI::Errors::SimulatedDeviceNotSupported);
+		if (IsDeviceSimulated(SerialNumber_)) {
+			CallCanceled("REENROLL", CMD_UUID, CMD_RPC,
+						 RESTAPI::Errors::SimulatedDeviceNotSupported);
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
 		}
 
 		GWObjects::ReEnroll PR;
-		if(!PR.from_json(ParsedBody_)) {
+		if (!PR.from_json(ParsedBody_)) {
 			return BadRequest(RESTAPI::Errors::MissingOrInvalidParameters);
 		}
 
@@ -1934,7 +1952,7 @@ namespace OpenWifi {
 		Cmd.WaitingForFile = 0;
 
 		return RESTAPI_RPC::WaitForCommand(CMD_RPC, APCommands::Commands::reenroll, false, Cmd,
-										   *ParsedBody_, *Request, *Response, timeout, nullptr, this,
-										   Logger_);
+										   *ParsedBody_, *Request, *Response, timeout, nullptr,
+										   this, Logger_);
 	}
 } // namespace OpenWifi
