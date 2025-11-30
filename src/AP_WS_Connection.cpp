@@ -7,6 +7,7 @@
 #include <Poco/Net/Context.h>
 #include <Poco/Net/HTTPServerRequestImpl.h>
 #include <Poco/Net/HTTPServerResponseImpl.h>
+#include <Poco/JSON/JSONException.h>
 #include <Poco/Net/NetException.h>
 #include <Poco/Net/SSLException.h>
 #include <Poco/Net/SecureStreamSocketImpl.h>
@@ -213,6 +214,7 @@ namespace OpenWifi {
 			}
 
 			State_.certificateExpiryDate = PeerCert.expiresOn().timestamp().epochTime();
+			State_.certificateIssuerName = PeerCert.issuerName();
 
 			poco_trace(Logger_,
 					   fmt::format("TLS-CONNECTION({}): Session={} CN={} Completed. (t={})", CId_,

@@ -35,7 +35,6 @@ namespace OpenWifi {
 		P.verificationDepth = 9;
 		P.loadDefaultCAs = root_ca_.empty();
 		P.cipherList = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH";
-		P.dhUse2048Bits = true;
 		P.caLocation = cas_;
         // P.securityLevel =
 
@@ -66,6 +65,16 @@ namespace OpenWifi {
 				Poco::Crypto::X509Certificate Issuing(issuer_cert_file_);
 				Context->addChainCertificate(Issuing);
 				Context->addCertificateAuthority(Issuing);
+			}
+
+			if (!client_cas_.empty()) {
+				// add certificates specified in clientcas
+				std::vector<Poco::Crypto::X509Certificate> Certs =
+					Poco::Net::X509Certificate::readPEM(client_cas_);
+				for (const auto &cert : Certs) {
+					Context->addChainCertificate(cert);
+					Context->addCertificateAuthority(cert);
+				}
 			}
 
 			Poco::Crypto::RSAKey Key("", key_file_, key_file_password_);
