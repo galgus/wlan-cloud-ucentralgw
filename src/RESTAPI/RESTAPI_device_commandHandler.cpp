@@ -91,7 +91,7 @@ namespace OpenWifi {
 					TransactionId_, UUID, RPC, Poco::Thread::current()->id()));
 			return Rtty(UUID, RPC, 60000ms, Restrictions);
 		};
-		case APCommands::Commands::package: {
+		case APCommands::Commands::package:{
 			GWObjects::DeviceRestrictions Restrictions;
 			std::string pkg_name = "";
 			if (!AP_WS_Server()->Connected(SerialNumberInt_, Restrictions)) {
@@ -462,6 +462,8 @@ namespace OpenWifi {
 		[[maybe_unused]] std::chrono::milliseconds timeout,
 		[[maybe_unused]] const GWObjects::DeviceRestrictions &Restrictions) {
 		poco_debug(Logger_, fmt::format("GET-PACKAGES: TID={}, user={} serial={}. thr_id={}",
+										TransactionId_, Requester(), SerialNumber_,
+										Poco::Thread::current()->id()));
 
 		if (IsDeviceSimulated(SerialNumber_)) {
 			return BadRequest(RESTAPI::Errors::SimulatedDeviceNotSupported);
